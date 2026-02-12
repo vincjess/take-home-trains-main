@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "train-scheduler"
+version = "0.1.0"
+description = "A FastAPI-based train scheduling service"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "fastapi>=0.104.1",
+    "uvicorn>=0.24.0",
+    "httpx>=0.25.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=6.2.5",
+    "pytest-cov>=4.0.0",
+    "requests>=2.26.0",
+    "black>=24.0.0",
+    "isort>=5.13.0",
+    "mypy>=1.8.0",
+]
+
+[tool.setuptools]
+py-modules = ["app", "db", "schemas", "service"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+[tool.black]
+line-length = 88
+
+[tool.isort]
+profile = "black"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+
+[tool.coverage.run]
+omit = ["tests/*"]
+
+[tool.coverage.report]
+exclude_lines = ["if __name__ == .__main__.:"]

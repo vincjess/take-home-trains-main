@@ -1,0 +1,84 @@
+### Health Check
+GET http://127.0.0.1:5000/
+
+### Add train ALPHA (arrives at 100, 300, 500)
+POST http://127.0.0.1:5000/trains
+Content-Type: application/json
+
+{
+    "id": "ALPHA",
+    "schedule": [100, 300, 500]
+}
+
+### Add train BETA (arrives at 200, 300, 600)
+POST http://127.0.0.1:5000/trains
+Content-Type: application/json
+
+{
+    "id": "BETA",
+    "schedule": [200, 300, 600]
+}
+
+### Add train GAMMA (arrives at 300, 400, 500)
+POST http://127.0.0.1:5000/trains
+Content-Type: application/json
+
+{
+    "id": "GAMMA",
+    "schedule": [300, 400, 500]
+}
+
+### Get schedule for ALPHA
+GET http://127.0.0.1:5000/trains/ALPHA
+
+### Get schedule for BETA
+GET http://127.0.0.1:5000/trains/BETA
+
+### Get schedule for GAMMA
+GET http://127.0.0.1:5000/trains/GAMMA
+
+### Get schedule for non-existent train (should return 404)
+GET http://127.0.0.1:5000/trains/NOTEXIST
+
+### Get next simultaneous arrival (default min_trains=2)
+# Should return 300 (ALPHA, BETA, GAMMA all arrive at 300)
+GET http://127.0.0.1:5000/trains/next
+
+### Get next simultaneous arrival after 300
+# Should return 500 (ALPHA and GAMMA arrive at 500)
+GET http://127.0.0.1:5000/trains/next?after=300
+
+### Get next simultaneous arrival with min_trains=3
+# Should return 300 (only time with 3+ trains)
+GET http://127.0.0.1:5000/trains/next?min_trains=3
+
+### Get next simultaneous arrival after 300 with min_trains=3
+# Should wrap around to 300 (no other time has 3 trains)
+GET http://127.0.0.1:5000/trains/next?after=300&min_trains=3
+
+### Test validation: invalid train ID (contains number)
+POST http://127.0.0.1:5000/trains
+Content-Type: application/json
+
+{
+    "id": "ABC123",
+    "schedule": [100]
+}
+
+### Test validation: empty schedule
+POST http://127.0.0.1:5000/trains
+Content-Type: application/json
+
+{
+    "id": "TEST",
+    "schedule": []
+}
+
+### Test validation: invalid time (>= 1440)
+POST http://127.0.0.1:5000/trains
+Content-Type: application/json
+
+{
+    "id": "TEST",
+    "schedule": [1440]
+}
