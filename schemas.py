@@ -2,6 +2,11 @@ import re
 
 from pydantic import BaseModel, Field, field_validator
 
+TRAIN_ID_MIN_LENGTH = 1
+TRAIN_ID_MAX_LENGTH = 6
+TRAIN_ID_PATTERN = rf"^[A-Za-z]{{{TRAIN_ID_MIN_LENGTH},{TRAIN_ID_MAX_LENGTH}}}$"
+TRAIN_ID_RE = re.compile(TRAIN_ID_PATTERN)
+
 
 class TrainScheduleCreate(BaseModel):
     id: str
@@ -13,9 +18,11 @@ class TrainScheduleCreate(BaseModel):
         # Train IDs must be 1-6 alphabetic characters
         if not v:
             raise ValueError("Train ID cannot be empty")
-        if len(v) > 6:
-            raise ValueError("Train ID must be at most 6 characters")
-        if not re.match(r"^[A-Za-z]+$", v):
+        if len(v) > TRAIN_ID_MAX_LENGTH:
+            raise ValueError(
+                f"Train ID must be at most {TRAIN_ID_MAX_LENGTH} characters"
+            )
+        if not TRAIN_ID_RE.fullmatch(v):
             raise ValueError("Train ID must contain only alphabetic characters")
         return v.upper()
 

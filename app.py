@@ -5,7 +5,7 @@ A FastAPI-based web service for managing train schedules at a station.
 """
 
 import uvicorn
-from fastapi import APIRouter, FastAPI, HTTPException, Query, Request
+from fastapi import APIRouter, FastAPI, HTTPException, Path, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
@@ -13,6 +13,7 @@ from db import Database
 from schemas import (
     ErrorResponse,
     NextTrainResponse,
+    TRAIN_ID_PATTERN,
     TrainScheduleCreate,
     TrainScheduleResponse,
 )
@@ -90,7 +91,13 @@ def get_next_simultaneous(
     response_model=list[int],
     responses={404: {"model": ErrorResponse}},
 )
-def get_schedule(train_id: str) -> list[int]:
+def get_schedule(
+    train_id: str = Path(
+        ...,
+        pattern=TRAIN_ID_PATTERN,
+        description="Train identifier (1-6 alphabetic characters)",
+    ),
+) -> list[int]:
     """Get the schedule for a specific train."""
     schedule = train_service.get_schedule(train_id.upper())
     if schedule is None:

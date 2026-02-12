@@ -1,11 +1,12 @@
 """Tests for the Train Schedule API."""
 
+import threading
 from typing import Any, Generator
 
 import pytest
 from fastapi.testclient import TestClient
 
-from app import app, db
+from app import app, db, train_service
 
 
 @pytest.fixture(autouse=True)
@@ -104,8 +105,25 @@ def test_update_schedule_removes_from_time_index() -> None:
 
 def test_get_schedule_not_found() -> None:
     """Test 404 when train doesn't exist."""
-    response = client.get("/trains/NOTEXIST")
+    response = client.get("/trains/NOPE")
     assert response.status_code == 404
+
+
+def test_get_schedule_validates_train_id() -> None:
+    """Test 422 when train_id path parameter is invalid."""
+    response = client.get("/trains/ABC123")
+    assert response.status_code == 422
+
+
+def test_train_id_canonicalized_to_uppercase() -> None:
+    """Train IDs should be normalized to uppercase on write/read."""
+    post_response = client.post("/trains", json={"id": "alpha", "schedule": [60, 120]})
+    assert post_response.status_code == 201
+    assert post_response.json()["id"] == "ALPHA"
+
+    get_response = client.get("/trains/alpha")
+    assert get_response.status_code == 200
+    assert get_response.json() == [60, 120]
 
 
 # GET /trains/next - Find Simultaneous Arrivals
@@ -160,3 +178,37 @@ def test_next_min_trains() -> None:
     data = response.json()
     assert data["time"] == 200
     assert sorted(data["trains"]) == ["ALPHA", "BETA", "GAMMA"]
+
+
+def test_concurrent_updates_and_next_queries() -> None:
+    """Concurrent writes and reads should not raise and should remain valid."""
+    errors: list[Exception] = []
+
+    def writer(train_id: str) -> None:
+        try:
+            for i in range(100):
+                train_service.upsert_schedule(train_id, [i % 1440, (i + 300) % 1440])
+        except Exception as e:
+            errors.append(e)
+
+    def reader() -> None:
+        try:
+            for _ in range(200):
+                result = train_service.find_next_simultaneous(after=0, min_trains=2)
+                assert "time" in result
+                assert "trains" in result
+        except Exception as e:
+            errors.append(e)
+
+    threads = [
+        threading.Thread(target=writer, args=("ALPHA",)),
+        threading.Thread(target=writer, args=("BETA",)),
+        threading.Thread(target=reader),
+    ]
+
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    assert errors == []
