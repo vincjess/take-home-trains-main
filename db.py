@@ -1,7 +1,6 @@
 """Thread-safe key-value store."""
 
 import threading
-from collections.abc import KeysView
 from typing import Any
 
 
@@ -18,9 +17,9 @@ class Database:
         with self._lock:
             self._store[key] = val
 
-    def keys(self) -> KeysView[str]:
+    def keys(self) -> list[str]:
         with self._lock:
-            return self._store.keys()
+            return list(self._store.keys())
 
     def clear(self) -> None:
         """For testing only."""

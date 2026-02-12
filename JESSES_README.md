@@ -43,12 +43,14 @@ mypy .
 ## API Endpoints
 
 - `GET /` - Health check
-- `POST /trains` - Add or update a train schedule
-- `GET /trains/{train_id}` - Get schedule for a train
+- `POST /trains` - Add or update a train schedule. Accepts `{ "id": "ABC", "schedule": [0, 60, ...] }` and normalizes IDs to uppercase.
+- `GET /trains/{train_id}` - Get schedule for a train. Returns `list[int]` (minutes from midnight). `train_id` must be 1-6 alphabetic characters.
 - `GET /trains/next` - Find next simultaneous arrival
 
 ## Design Decisions
 
-- **Dual indexing**: The service maintains both `train:ID -> schedule` and `time:minutes -> [train_ids]` indexes. This trades slower writes for faster overlap queries.
+- **Simple scan approach**: The `/next` endpoint scans all schedules and groups by time on each request. I initially considered maintaining a secondary time index (`time:minutes -> [train_ids]`) to precompute overlaps, but this adds complexity and is harder to extend for real-world requirements like weekend/holiday schedules, multiple stations, or schedule versioning.
+
 - **Service layer**: Business logic is separated from the API layer in `service.py`.
+
 - **Validation**: Train IDs must be 1-6 alphabetic characters. Schedule times must be 0-1439 (minutes from midnight).

@@ -31,7 +31,7 @@ def test_keys() -> None:
 
     for k, v in data.items():
         d.set(k, v)
-    assert data.keys() == d.keys()
+    assert list(data.keys()) == d.keys()
 
 
 def test_keys_empty() -> None:
