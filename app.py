@@ -29,8 +29,9 @@ async def validation_exception_handler(
         error = errors[0]
         msg = error.get("msg", "Validation error")
         # Clean up Pydantic's "Value error, " prefix
-        if msg.startswith("Value error, "):
-            msg = msg[13:]
+        prefix = "Value error, "
+        if msg.startswith(prefix):
+            msg = msg[len(prefix):]
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content={"detail": msg}
         )

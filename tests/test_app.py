@@ -35,7 +35,7 @@ def test_startup() -> None:
 @pytest.mark.parametrize(
     "train",
     [
-        # I removed 1440 from the original test case because 0-1439 is the valid range.
+        # Notes: I removed 1440 from the original test case because 0-1439 is the valid range.
         # I also removed the 1 test case because train IDs must be 1-6 alphabetic characters.
         {"id": "TOMO", "schedule": [180, 640, 1439]},
         {"id": "FOMO", "schedule": [440, 640]},
@@ -81,8 +81,8 @@ def test_add_empty_schedule_rejected() -> None:
     assert response.status_code == 422
 
 
-def test_update_schedule_removes_from_time_index() -> None:
-    """Test that updating a schedule removes the train from old time slots."""
+def test_update_schedule_affects_next_results() -> None:
+    """Test that updating a schedule correctly updates simultaneous arrivals."""
     # Create two trains that overlap at 100
     client.put("/trains", json={"id": "ALPHA", "schedule": [100, 200]})
     client.put("/trains", json={"id": "BETA", "schedule": [100, 300]})
@@ -118,12 +118,14 @@ def test_get_schedule_not_found() -> None:
     """Test 404 when train doesn't exist."""
     response = client.get("/trains/NOPE")
     assert response.status_code == 404
+    assert response.json()["detail"] == "Train 'NOPE' not found"
 
 
 def test_get_schedule_validates_train_id() -> None:
     """Test 422 when train_id path parameter is invalid."""
     response = client.get("/trains/ABC123")
     assert response.status_code == 422
+    assert response.json()["detail"] == "Train ID must be 1-6 alphabetic characters"
 
 
 def test_train_id_canonicalized_to_uppercase() -> None:
