@@ -5,7 +5,7 @@ A FastAPI-based web service for managing train schedules at a station.
 """
 
 import uvicorn
-from fastapi import APIRouter, FastAPI, HTTPException, Path, Query, Request
+from fastapi import APIRouter, FastAPI, HTTPException, Query, Request, Response, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
@@ -13,7 +13,7 @@ from db import Database
 from schemas import (
     ErrorResponse,
     NextTrainResponse,
-    TRAIN_ID_PATTERN,
+    TrainId,
     TrainScheduleCreate,
     TrainScheduleResponse,
 )
@@ -26,11 +26,13 @@ async def validation_exception_handler(
     """Return clean error messages for validation failures."""
     errors = exc.errors()
     if errors:
-        msg = errors[0].get("msg", "Validation error")
+        error = errors[0]
+        msg = error.get("msg", "Validation error")
+        # Clean up Pydantic's "Value error, " prefix
         if msg.startswith("Value error, "):
             msg = msg[13:]
-        return JSONResponse(status_code=422, content={"detail": msg})
-    return JSONResponse(status_code=422, content={"detail": "Validation error"})
+        return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content={"detail": msg})
+    return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content={"detail": "Validation error"})
 
 
 app = FastAPI(
@@ -52,15 +54,20 @@ def health_check() -> str:
 router = APIRouter(prefix="/trains", tags=["trains"])
 
 
-@router.post(
+@router.put(
     "",
     response_model=TrainScheduleResponse,
-    status_code=201,
-    responses={400: {"model": ErrorResponse}},
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_201_CREATED: {"model": TrainScheduleResponse},
+        status.HTTP_422_UNPROCESSABLE_ENTITY: {"model": ErrorResponse},
+    },
 )
-def add_train(train_data: TrainScheduleCreate) -> TrainScheduleResponse:
-    """Add or update a train schedule."""
-    train_service.upsert_schedule(train_data.id, train_data.schedule)
+def upsert_train(train_data: TrainScheduleCreate, response: Response) -> TrainScheduleResponse:
+    """Add or update a train schedule. Returns 201 if created, 200 if updated."""
+    created = train_service.upsert_schedule(train_data.id, train_data.schedule)
+    if created:
+        response.status_code = status.HTTP_201_CREATED
     return TrainScheduleResponse(id=train_data.id, schedule=train_data.schedule)
 
 
@@ -89,21 +96,16 @@ def get_next_simultaneous(
 @router.get(
     "/{train_id}",
     response_model=list[int],
-    responses={404: {"model": ErrorResponse}},
+    responses={
+        status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+        status.HTTP_422_UNPROCESSABLE_ENTITY: {"model": ErrorResponse},
+    },
 )
-def get_schedule(
-    train_id: str = Path(
-        ...,
-        pattern=TRAIN_ID_PATTERN,
-        description="Train identifier (1-6 alphabetic characters)",
-    ),
-) -> list[int]:
+def get_schedule(train_id: TrainId) -> list[int]:
     """Get the schedule for a specific train."""
-    schedule = train_service.get_schedule(train_id.upper())
+    schedule = train_service.get_schedule(train_id)
     if schedule is None:
-        raise HTTPException(
-            status_code=404, detail=f"Train '{train_id.upper()}' not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Train '{train_id}' not found")
     return schedule
 
 

@@ -11,7 +11,6 @@ requires-python = ">=3.9"
 dependencies = [
     "fastapi>=0.104.1",
     "uvicorn>=0.24.0",
-    "httpx>=0.25.0",
 ]
 
 [project.optional-dependencies]

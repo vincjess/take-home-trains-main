@@ -1,30 +1,25 @@
 import re
+from typing import Annotated
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import AfterValidator, BaseModel, Field, field_validator
 
-TRAIN_ID_MIN_LENGTH = 1
 TRAIN_ID_MAX_LENGTH = 6
-TRAIN_ID_PATTERN = rf"^[A-Za-z]{{{TRAIN_ID_MIN_LENGTH},{TRAIN_ID_MAX_LENGTH}}}$"
-TRAIN_ID_RE = re.compile(TRAIN_ID_PATTERN)
+TRAIN_ID_RE = re.compile(rf"^[A-Za-z]{{1,{TRAIN_ID_MAX_LENGTH}}}$")
+
+
+def validate_train_id(v: str) -> str:
+    """Validate and normalize train ID."""
+    if not TRAIN_ID_RE.fullmatch(v):
+        raise ValueError("Train ID must be 1-6 alphabetic characters")
+    return v.upper()
+
+
+TrainId = Annotated[str, AfterValidator(validate_train_id)]
 
 
 class TrainScheduleCreate(BaseModel):
-    id: str
+    id: TrainId
     schedule: list[int]
-
-    @field_validator("id")
-    @classmethod
-    def validate_train_id(cls, v: str) -> str:
-        # Train IDs must be 1-6 alphabetic characters
-        if not v:
-            raise ValueError("Train ID cannot be empty")
-        if len(v) > TRAIN_ID_MAX_LENGTH:
-            raise ValueError(
-                f"Train ID must be at most {TRAIN_ID_MAX_LENGTH} characters"
-            )
-        if not TRAIN_ID_RE.fullmatch(v):
-            raise ValueError("Train ID must contain only alphabetic characters")
-        return v.upper()
 
     @field_validator("schedule")
     @classmethod

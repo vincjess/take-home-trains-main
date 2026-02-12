@@ -25,8 +25,12 @@ class TrainService:
             if key.startswith(self.TRAIN_PREFIX)
         ]
 
-    def upsert_schedule(self, train_id: str, schedule: list[int]) -> None:
-        self._db.set(self._train_key(train_id), schedule)
+    def upsert_schedule(self, train_id: str, schedule: list[int]) -> bool:
+        """Store schedule for a train. Returns True if created, False if updated."""
+        key = self._train_key(train_id)
+        created = self._db.get(key) is None
+        self._db.set(key, schedule)
+        return created
 
     def get_schedule(self, train_id: str) -> list[int] | None:
         result = self._db.get(self._train_key(train_id))
