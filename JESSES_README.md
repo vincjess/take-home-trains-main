@@ -2,32 +2,12 @@
 
 A FastAPI service for managing train schedules and finding simultaneous arrivals.
 
-## Setup
+## API Endpoints
 
-```bash
-# Minimal runtime setup
-python3 -m venv venv
-. venv/bin/activate
-pip install -e .
-uvicorn app:app --host 127.0.0.1 --port 5000
-```
-
-```bash
-# Development setup (includes lint/type/test tools)
-python3 -m venv venv
-. venv/bin/activate
-pip install -e ".[dev]"
-```
-
-## Running the Server
-
-```bash
-# Run the server
-uvicorn app:app --host 127.0.0.1 --port 5000
-
-# Or directly
-python app.py
-```
+- `GET /` - Health check
+- `PUT /trains` - Create or update a train schedule. Accepts `{ "id": "ABC", "schedule": [0, 60, ...] }` and normalizes IDs to uppercase.
+- `GET /trains/{train_id}` - Get schedule for a train. Returns `list[int]` (minutes from midnight). `train_id` must be 1-6 alphabetic characters.
+- `GET /trains/next` - Find next simultaneous arrival with query parameters to set `after` (current time in minutes after midnight) and `min_trains` (minimum num. trains need to be at the station at the same time, default = 2)
 
 ## Testing
 
@@ -49,13 +29,6 @@ isort .
 # Type check
 mypy .
 ```
-
-## API Endpoints
-
-- `GET /` - Health check
-- `PUT /trains` - Create or update a train schedule. Accepts `{ "id": "ABC", "schedule": [0, 60, ...] }` and normalizes IDs to uppercase.
-- `GET /trains/{train_id}` - Get schedule for a train. Returns `list[int]` (minutes from midnight). `train_id` must be 1-6 alphabetic characters.
-- `GET /trains/next` - Find next simultaneous arrival with query parameters to set `after` (current time) and `min_trains` (minimum num. trains need to be at the station at the same time, default = 2)
 
 ## Design Decisions
 
