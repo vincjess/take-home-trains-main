@@ -31,8 +31,13 @@ async def validation_exception_handler(
         # Clean up Pydantic's "Value error, " prefix
         if msg.startswith("Value error, "):
             msg = msg[13:]
-        return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content={"detail": msg})
-    return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content={"detail": "Validation error"})
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content={"detail": msg}
+        )
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={"detail": "Validation error"},
+    )
 
 
 app = FastAPI(
@@ -63,7 +68,9 @@ router = APIRouter(prefix="/trains", tags=["trains"])
         status.HTTP_422_UNPROCESSABLE_ENTITY: {"model": ErrorResponse},
     },
 )
-def upsert_train(train_data: TrainScheduleCreate, response: Response) -> TrainScheduleResponse:
+def upsert_train(
+    train_data: TrainScheduleCreate, response: Response
+) -> TrainScheduleResponse:
     """Add or update a train schedule. Returns 201 if created, 200 if updated."""
     created = train_service.upsert_schedule(train_data.id, train_data.schedule)
     if created:
@@ -105,7 +112,10 @@ def get_schedule(train_id: TrainId) -> list[int]:
     """Get the schedule for a specific train."""
     schedule = train_service.get_schedule(train_id)
     if schedule is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Train '{train_id}' not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Train '{train_id}' not found",
+        )
     return schedule
 
 
